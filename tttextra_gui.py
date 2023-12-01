@@ -1,4 +1,5 @@
 from tkinter import *
+import random
 
 root= Tk()
 root.config(bg='black')
@@ -14,6 +15,7 @@ bigWinner = None    #Symbol of winner of the overall game (X or O)
 previousS = 0       #Number of small board in which the player has to play
 nowB = 0            #Number of small board in which the player is playing
 winBoard = {"X":[],"O":[]}  #Holds information about small boards won by X or O
+labels_to_destroy = [] #List of labels which have to be destroyed after the game ends
 blackList = []          #List of small boards which are won or tied
 label_console = Label() #Label which holds the console text
 
@@ -51,6 +53,8 @@ class Board_:
         self.but19 = Button(root, text=" ", padx=15, pady=10, bd=5, highlightthickness=3,bg='grey65', command=lambda: self.clicked(self.but19))
         self.but19.grid(row=4*x+6, column=4*y+4,sticky=W+E)
 
+        self.buttons = [self.but11, self.but12, self.but13, self.but14, self.but15, self.but16, self.but17, self.but18, self.but19]
+
     #Handles the button click event
     def clicked(self,butt):
         global player,announcement,label_console,previousS,nowB
@@ -68,7 +72,7 @@ class Board_:
                 return
                 
         butt.config(text=player, padx=12, pady=10, state=DISABLED, disabledforeground='black')
-        
+        #printBoard(bigBoard)
         if  bigBoard[D][0][M] == "-":
             bigBoard[D][0][M] = player
             if M+1 not in blackList : 
@@ -93,12 +97,18 @@ class Board_:
             else: 
                 consoleInput("Play somewhere outside " + str(blackList) )
 
+    def reset(self):
+        for button in self.buttons:
+            button.config(text=" ", state=NORMAL)
+
+
+
 #Obiect of board to play
 bigBoard_ = [Board_(root, i // 3, i % 3) for i in range(9)]
 
 announcement = "Choose mode"
-label_text = Label(root, text=announcement, bd=10, highlightthickness=2, bg='grey65', font=("Helvetica", 15))
-label_text.grid(row=0, column=2, columnspan=11, pady=15, sticky=W+E)
+label_console = Label(root, text=announcement, bd=10, highlightthickness=2, bg='grey65', font=("Helvetica", 15))
+label_console.grid(row=0, column=2, columnspan=11, pady=15, sticky=W+E)
 
 but_mode1 = Button(root, text="Player vs Player", padx=15, pady=10, bd=5, highlightthickness=3, bg='grey65', command=lambda: set_mode(but_mode1))
 but_mode1.grid(row=1, column=3, columnspan=4, sticky=W+E)
@@ -107,7 +117,7 @@ but_mode2 = Button(root, text="Player vs Computer", padx=15, pady=10, bd=5, high
 but_mode2.grid(row=1, column=8, columnspan=4, sticky=W+E)
 
 if announcement == "Let's play!":
-    label_text.grid(row=0, column=2, columnspan=11, rowspan=3, pady=15, sticky=W+E)
+    label_console.grid(row=0, column=2, columnspan=11, rowspan=3, pady=15, sticky=W+E)
 
 label1 = Label(root, text=" ",bd=4, bg='black').grid(row=3,column=1,columnspan=11)
 label2 = Label(root, text=" ",bd=4, bg='black').grid(row=4,column=1,rowspan=11)
@@ -139,14 +149,14 @@ def printBoard(bigBoard):
 
 #Handles the selection of game mode (Player vs Player or Player vs Computer) and the first player symbol (X or O)
 def set_mode(button):
-    global mode,player,opponent,but_mode1,but_mode2,announcement,label_text,label_console
+    global mode,player,opponent,but_mode1,but_mode2,announcement,label_console
     if announcement == "Choose mode":
         if button.cget("text") == "Player vs Player":
             mode = "P"
         elif button.cget("text") == "Player vs Computer":
             mode = "C"
         announcement = "Choose your player"
-        label_text.config(text=announcement)
+        label_console.config(text=announcement)
 
         but_mode1.config(text="X",padx=12,pady=10)
         but_mode2.config(text="O",padx=12,pady=10)
@@ -160,7 +170,7 @@ def set_mode(button):
             opponent = "X"
 
         announcement = "Let's play!"
-        label_text.config(text=announcement)
+        label_console.config(text=announcement)
         but_mode1.config(state="disabled")
         but_mode2.config(state="disabled")
         label_console = Label(root, text=announcement, bd=10, highlightthickness=10, bg='grey65', font=("Helvetica", 15))
@@ -230,9 +240,11 @@ def checkWin(played, r, c):
         if player == "X":
             label_win_x = Label(root, text="x",font = ("Helvetica", 40),padx=41,pady=31,bd=4, highlightthickness=16,bg='grey65')
             label_win_x.grid(row=r,column=c,rowspan=3,columnspan=3)
+            labels_to_destroy.append(label_win_x)
         else:
             label_win_o = Label(root, text="o",font = ("Helvetica", 40),padx=40,pady=31,bd=4, highlightthickness=16,bg='grey65')
             label_win_o.grid(row=r,column=c,rowspan=3,columnspan=3)
+            labels_to_destroy.append(label_win_o)
             
 #Checks for a tie on a small board 
 def checkTie(played):
@@ -259,7 +271,8 @@ def checkBigWin():
         consoleInput("Mecz wygrał " + str(bigWinner) + "\nGRATULACJE!" )
         '''
         #to be corected
-        but_res = Button(root, text="Wanna play again?", padx=15, pady=10, bd=5, highlightthickness=3,bg='grey65', command=lambda: restart(bigBoard_))
+
+        but_res = Button(root, text="Wanna play again?", padx=15, pady=10, bd=5, highlightthickness=3,bg='grey65', command= restartGame)
         but_res.grid(row=16, column=4, columnspan=7, sticky=W+E)
         '''
         gameRunning = False
@@ -275,30 +288,81 @@ def checkBigTie():
         '''
         gameRunning = False
 
-#to be corrected
-def restart(bigBoard_):
-    global gameRunning, bigBoard
-    for b in bigBoard_:
-        b.but11.config(text=" ", padx=15, pady=10, state=NORMAL, disabledforeground='black')
-        b.but12.config(text=" ", padx=15, pady=10, state=NORMAL, disabledforeground='black')
-        b.but13.config(text=" ", padx=15, pady=10, state=NORMAL, disabledforeground='black')
-        b.but14.config(text=" ", padx=15, pady=10, state=NORMAL, disabledforeground='black')
-        b.but15.config(text=" ", padx=15, pady=10, state=NORMAL, disabledforeground='black')
-        b.but16.config(text=" ", padx=15, pady=10, state=NORMAL, disabledforeground='black')
-        b.but17.config(text=" ", padx=15, pady=10, state=NORMAL, disabledforeground='black')
-        b.but18.config(text=" ", padx=15, pady=10, state=NORMAL, disabledforeground='black')
-        b.but19.config(text=" ", padx=15, pady=10, state=NORMAL, disabledforeground='black')
-    bigBoard = [["-" for _ in range(9)] for _ in range(9)]
-    announcement = "Choose mode"
-    label_text.config(text=announcement)
-    label_text.grid(row=0, column=2, columnspan=11, rowspan=3, pady=15, sticky=W+E)
-    gemRunning = True
-
-#to be corrected
-def computer():
-    return 
-
 root.mainloop()
+
+'''
+#to be corrected
+def restartGame():
+    global gameRunning, bigBoard, winBoard, blackList, previousS, nowB, bigWinner, announcement, label_console, labels_to_destroy
+    for b in bigBoard_:
+        b.reset()
+    for label in labels_to_destroy:
+            label.destroy()
+
+    bigBoard = [(board.copy(),"") for elem in range(9)]
+    winBoard = {"X":[],"O":[]}
+    previousS = 0
+    nowB = 0
+    winner = None 
+    bigWinner = None
+    blackList = []
+    labels_to_destroy = []
+    announcement = "Choose mode"
+    consoleInput(announcement)
+    label_console.grid(row=0, column=2, columnspan=11, rowspan=1, pady=15, sticky=W+E)
+    printBoard(bigBoard)
+    gemRunning = True
+'''
+
+'''
+def computer():             
+    global bigBoard, previousS, nowB
+    while True:
+        
+        if previousS == 0:
+            pD = random.randint(1,9)
+            
+        else: pD=previousS
+        print(pD)
+        if allFree(bigBoard[pD-1][0]) == True : 
+            pM = random.randint(1,9)-1
+        else:
+            print("findBM")
+            pM = findBestMove(bigBoard[pD-1][0]) 
+        print("pM:")
+        print(pM+1)
+        print(pM)
+        if bigBoard[pD-1][0][pM] == "-" and pD == previousS:
+            print(f"komputer musi grac w {previousS}")
+            bigBoard[pD-1][0][pM] = "O"
+            bigBoard_[(pD-1)].buttons[pM].config(text="O", padx=12, pady=10, state=DISABLED, disabledforeground='black')
+            if pM+1 not in blackList: 
+                previousS = pM+1
+                nowB = pD
+            else: 
+                previousS = 0
+                nowB = pD
+            switchPlayer()
+            print("braek---iii----->")
+            break
+        elif  bigBoard[pD-1][0][pM] == "-" and previousS == 0 and pD not in blackList:
+            print(f"komputer musi grac poza {blackList}")
+            bigBoard[pD-1][0][pM] = "O"
+            bigBoard_[(pD-1)].buttons[pM].config(text="O", padx=12, pady=10, state=DISABLED, disabledforeground='black')
+            if pM+1 not in blackList: 
+                previousS = pM+1
+                nowB = pD
+            switchPlayer()
+            print("braek-------->")
+            break
+        else:
+            print("--")
+            computer()
+'''
+
+
+
+
 
 
 
