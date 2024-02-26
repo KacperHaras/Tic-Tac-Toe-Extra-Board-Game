@@ -25,7 +25,7 @@ board = ["-","-","-",
          "-","-","-",
          "-","-","-"]
 
-#List which holds informations about contents of small boards and information if they are won by someone
+#List which holds informations about contents of small boards and information if they are won by someone 
 bigBoard = [(board.copy(),"") for elem in range(9)]
 
 #class which represents the small board
